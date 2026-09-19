@@ -1,0 +1,205 @@
+// ================================================
+// Notification Engine — Prisma Schema
+// ================================================
+// Database schema for the event-driven notification
+// engine. Supports multi-channel delivery, compliance
+// rules, user preferences, and delivery tracking.
+// ================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------
+// Enums
+// ------------------------------------------------
+
+enum Tier {
+  CRITICAL
+  HIGH
+  NORMAL
+  LOW
+  REGULATORY
+}
+
+enum Channel {
+  SMS
+  EMAIL
+  PUSH
+  WHATSAPP
+  IN_APP
+}
+
+enum NotificationStatus {
+  PENDING
+  QUEUED
+  PROCESSING
+  SENT
+  DELIVERED
+  FAILED
+  CANCELLED
+}
+
+enum TransactionSubType {
+  DEBIT
+  CREDIT
+}
+
+// ------------------------------------------------
+// Event Types — configuration-driven event registry
+// ------------------------------------------------
+
+model EventType {
+  id                   Int       @id @default(autoincrement())
+  event_type           String    @unique
+  tier                 Tier
+  default_channels     Channel[]
+  description          String
+  bypass_dnd           Boolean   @default(false)
+  bypass_quiet_hours   Boolean   @default(false)
+  bypass_frequency_cap Boolean   @default(false)
+  requires_optin       Boolean   @default(false)
+  is_active            Boolean   @default(true)
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @updatedAt
+
+  // Relations
+  notifications   Notification[]
+  preferences     UserPreference[]
+  frequency_tracks FrequencyTracker[]
+
+  @@map("event_types")
+}
+
+// ------------------------------------------------
+// Users
+// ------------------------------------------------
+
+model User {
+  id               String   @id @default(uuid())
+  email            String   @unique
+  phone            String?
+  device_token     String?
+  whatsapp_number  String?
+  locale           String   @default("en")
+  timezone         String   @default("Asia/Kolkata")
+  dnd_enabled      Boolean  @default(false)
+  marketing_optin  Boolean  @default(false)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  // Relations
+  notifications    Notification[]
+  preferences      UserPreference[]
+  frequency_tracks FrequencyTracker[]
+
+  @@map("users")
+}
+
+// ------------------------------------------------
+// User Preferences — per-event, per-channel settings
+// ------------------------------------------------
+
+model UserPreference {
+  id                Int       @id @default(autoincrement())
+  user_id           String
+  event_type_id     Int
+  channel           Channel
+  enabled           Boolean   @default(true)
+  quiet_hours_start String?   // HH:mm format
+  quiet_hours_end   String?   // HH:mm format
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+
+  // Relations
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  event_type EventType @relation(fields: [event_type_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, event_type_id, channel])
+  @@map("user_preferences")
+}
+
+// ------------------------------------------------
+// Notifications — core notification records
+// ------------------------------------------------
+
+model Notification {
+  id              String             @id @default(uuid())
+  user_id         String
+  event_type_id   Int
+  channel         Channel
+  status          NotificationStatus @default(PENDING)
+  payload         Json               // JSONB — flexible event-specific data
+  template_id     String?
+  sub_type        TransactionSubType?
+  scheduled_at    DateTime?
+  sent_at         DateTime?
+  delivered_at    DateTime?
+  failed_at       DateTime?
+  retry_count     Int                @default(0)
+  max_retries     Int                @default(3)
+  next_retry_at   DateTime?
+  error_message   String?
+  idempotency_key String             @unique
+  created_at      DateTime           @default(now())
+  updated_at      DateTime           @updatedAt
+
+  // Relations
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  event_type EventType @relation(fields: [event_type_id], references: [id], onDelete: Cascade)
+  logs       NotificationLog[]
+
+  @@index([user_id, event_type_id])
+  @@index([status, scheduled_at])
+  @@index([idempotency_key])
+  @@index([created_at])
+  @@map("notifications")
+}
+
+// ------------------------------------------------
+// Notification Logs — full audit trail per attempt
+// ------------------------------------------------
+
+model NotificationLog {
+  id                Int                @id @default(autoincrement())
+  notification_id   String
+  status            NotificationStatus
+  provider_response Json?              // JSONB — raw provider response
+  error_details     String?
+  created_at        DateTime           @default(now())
+
+  // Relations
+  notification Notification @relation(fields: [notification_id], references: [id], onDelete: Cascade)
+
+  @@index([notification_id])
+  @@index([created_at])
+  @@map("notification_logs")
+}
+
+// ------------------------------------------------
+// Frequency Tracker — rate limiting per user/event/channel
+// ------------------------------------------------
+
+model FrequencyTracker {
+  id            Int      @id @default(autoincrement())
+  user_id       String
+  event_type_id Int
+  channel       Channel
+  window_start  DateTime
+  count         Int      @default(0)
+  max_count     Int      @default(10)
+  created_at    DateTime @default(now())
+
+  // Relations
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  event_type EventType @relation(fields: [event_type_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, event_type_id, channel, window_start])
+  @@index([user_id, event_type_id, channel])
+  @@map("frequency_tracker")
+}
