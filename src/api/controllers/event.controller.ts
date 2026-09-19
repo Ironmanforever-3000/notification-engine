@@ -1,42 +1,32 @@
-﻿import { Request, Response } from "express";
+﻿import { Request, Response, NextFunction } from "express";
+import { createEventSchema } from "../../types/event.types";
 import { ingestEvent } from "../../services/event.service";
+import { AppError } from "../middleware/error.middleware";
 
 export async function createEvent(
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) {
   try {
-    const {
-      event_type,
-      user_id,
-      payload,
-      priority,
-      correlation_id
-    } = req.body;
+    const result = createEventSchema.safeParse(req.body);
 
-    if (!event_type || !user_id || !payload) {
-      return res.status(400).json({
-        error: "event_type, user_id and payload are required"
-      });
+    if (!result.success) {
+      throw new AppError(
+        400,
+        "INVALID_REQUEST",
+        result.error.issues.map(issue => issue.message).join(", ")
+      );
     }
 
-    const event = await ingestEvent({
-      event_type,
-      user_id,
-      payload,
-      priority,
-      correlation_id
-    });
+    const event = await ingestEvent(result.data);
 
     return res.status(202).json({
-      message: "Event accepted for processing",
-      event
+      eventId: event.id,
+      status: "queued"
     });
 
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      error: "Failed to ingest event"
-    });
+    next(error);
   }
 }

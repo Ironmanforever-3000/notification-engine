@@ -1,10 +1,25 @@
 ﻿import { query } from "../client";
-import { FinancialEvent } from "../../types/event.types";
+
+export interface EventRow {
+  id: string;
+  event_type: string;
+  user_id: string;
+  payload: Record<string, unknown>;
+  priority: string;
+  correlation_id: string | null;
+  created_at: Date;
+}
 
 export async function insertEvent(
-  event: FinancialEvent
-): Promise<FinancialEvent> {
-  const rows = await query<FinancialEvent>(
+  event: {
+    event_type: string;
+    user_id: string;
+    payload: Record<string, unknown>;
+    priority?: string;
+    correlation_id?: string;
+  }
+): Promise<EventRow> {
+  const rows = await query<EventRow>(
     `
     INSERT INTO notification_events
     (
@@ -32,5 +47,6 @@ export async function insertEvent(
       event.correlation_id ?? null
     ]
   );
+
   return rows[0];
 }
