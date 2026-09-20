@@ -2,8 +2,9 @@
 import { env } from "../config/env";
 import { query } from "../db/client";
 import { logger } from "../utils/logger";
+import { routeEvent } from "../services/routing.service";
 
-interface RouteEventJob {
+export interface RouteEventJob {
   eventId: string;
 }
 
@@ -40,34 +41,44 @@ const worker = new Worker<RouteEventJob>(
     );
 
     const event = rows[0];
+
     if (!event) {
-      logger.error("Event not found", { jobId: job.id, eventId });
       throw new Error(`Event ${eventId} not found`);
     }
 
-    logger.info("Event loaded by worker", {
-      jobId: job.id,
+    logger.info("Event loaded", {
       eventId: event.id,
       eventType: event.event_type,
-      userId: event.user_id
+      userId: event.user_id,
     });
 
-    logger.info("Route event processing completed", { eventId: event.id });
+    const routingResult = await routeEvent({
+      eventId: event.id,
+      eventType: event.event_type,
+      userId: event.user_id,
+    });
+
+    logger.info("Event routing completed", {
+      eventId: event.id,
+      channels: routingResult.channels,
+    });
+
+    return routingResult;
   },
   {
     connection: {
       host: env.redisHost,
-      port: env.redisPort
+      port: env.redisPort,
     }
   }
 );
 
 worker.on("completed", (job) => {
-  logger.info("Queue job completed", { jobId: job.id });
+  logger.info("Route event job completed", { jobId: job.id });
 });
 
 worker.on("failed", (job, error) => {
-  logger.error("Queue job failed", { jobId: job?.id, error: error.message });
+  logger.error("Route event job failed", { jobId: job?.id, error: error.message });
 });
 
 logger.info("Route Event Worker started");
