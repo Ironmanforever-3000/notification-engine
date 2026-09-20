@@ -3,6 +3,7 @@ import { dispatchSmsQueue } from "../queues/dispatchSms.queue";
 import { dispatchEmailQueue } from "../queues/dispatchEmail.queue";
 import { dispatchPushQueue } from "../queues/dispatchPush.queue";
 import { dispatchWhatsappQueue } from "../queues/dispatchWhatsapp.queue";
+import { dispatchInAppQueue } from "../queues/dispatchInApp.queue";
 
 export interface RoutingInput {
   eventId: string;
@@ -54,7 +55,11 @@ export async function routeEvent(input: RoutingInput) {
         break;
 
       case "in_app":
-        console.log(`In-app channel selected for event ${input.eventId}`);
+        await dispatchInAppQueue.add("dispatch-in-app", {
+          eventId: input.eventId,
+          userId: input.userId,
+          channel: "in_app"
+        });
         break;
 
       default:

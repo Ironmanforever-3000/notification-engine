@@ -12,7 +12,8 @@
     "worker:sms": "ts-node src/workers/dispatchSms.worker.ts",
     "worker:email": "ts-node src/workers/dispatchEmail.worker.ts",
     "worker:push": "ts-node src/workers/dispatchPush.worker.ts",
-    "worker:whatsapp": "ts-node src/workers/dispatchWhatsapp.worker.ts"
+    "worker:whatsapp": "ts-node src/workers/dispatchWhatsapp.worker.ts",
+    "worker:in-app": "ts-node src/workers/dispatchInApp.worker.ts"
   },
   "keywords": [
     "notification",
