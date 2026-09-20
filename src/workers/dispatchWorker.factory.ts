@@ -33,7 +33,7 @@ export interface DispatchWorkerConfig {
     subject?: string
   ) => Promise<DispatchSendResult>;
 
-  getDestination: (user: { email: string; phone: string | null }) => string | null;
+  getDestination: (user: { email: string; phone: string | null; fcm_token: string | null }) => string | null;
 }
 
 interface EventRow {

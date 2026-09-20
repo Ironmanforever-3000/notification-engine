@@ -5,6 +5,7 @@ export interface UserRow {
   name: string;
   email: string;
   phone: string | null;
+  fcm_token: string | null;
   locale: string;
   timezone: string;
   created_at: Date;
@@ -22,6 +23,7 @@ export async function getUserById(
       phone,
       locale,
       timezone,
+    fcm_token,
       created_at
     FROM users
     WHERE id = $1

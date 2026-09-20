@@ -10,7 +10,9 @@
     "start": "node dist/server.js",
     "test": "jest --runInBand",
     "worker:sms": "ts-node src/workers/dispatchSms.worker.ts",
-    "worker:email": "ts-node src/workers/dispatchEmail.worker.ts"
+    "worker:email": "ts-node src/workers/dispatchEmail.worker.ts",
+    "worker:push": "ts-node src/workers/dispatchPush.worker.ts",
+    "worker:whatsapp": "ts-node src/workers/dispatchWhatsapp.worker.ts"
   },
   "keywords": [
     "notification",
@@ -43,6 +45,7 @@
     "bullmq": "^6.3.8",
     "dotenv": "^18.0.1",
     "express": "^5.2.1",
+    "firebase-admin": "^14.4.0",
     "ioredis": "^6.0.0",
     "nodemailer": "^10.0.10",
     "pg": "^8.23.0",

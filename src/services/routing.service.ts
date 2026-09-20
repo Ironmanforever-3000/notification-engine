@@ -1,6 +1,8 @@
-import { getEventTypeConfig } from "../config/event-registry";
+﻿import { getEventTypeConfig } from "../config/event-registry";
 import { dispatchSmsQueue } from "../queues/dispatchSms.queue";
 import { dispatchEmailQueue } from "../queues/dispatchEmail.queue";
+import { dispatchPushQueue } from "../queues/dispatchPush.queue";
+import { dispatchWhatsappQueue } from "../queues/dispatchWhatsapp.queue";
 
 export interface RoutingInput {
   eventId: string;
@@ -36,11 +38,19 @@ export async function routeEvent(input: RoutingInput) {
         break;
 
       case "push":
-        console.log(`Push channel selected for event ${input.eventId}`);
+        await dispatchPushQueue.add("dispatch-push", {
+          eventId: input.eventId,
+          userId: input.userId,
+          channel: "push"
+        });
         break;
 
       case "whatsapp":
-        console.log(`WhatsApp channel selected for event ${input.eventId}`);
+        await dispatchWhatsappQueue.add("dispatch-whatsapp", {
+          eventId: input.eventId,
+          userId: input.userId,
+          channel: "whatsapp"
+        });
         break;
 
       case "in_app":
