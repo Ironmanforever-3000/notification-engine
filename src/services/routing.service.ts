@@ -1,4 +1,4 @@
-﻿import { getEventTypeConfig } from "../config/event-registry";
+import { getEventTypeConfig } from "../config/event-registry";
 import { dispatchSmsQueue } from "../queues/dispatchSms.queue";
 import { dispatchEmailQueue } from "../queues/dispatchEmail.queue";
 
@@ -18,7 +18,7 @@ export async function routeEvent(input: RoutingInput) {
   const channels = config.default_channels;
 
   for (const channel of channels) {
-    switch (channel) {
+    switch (channel.toLowerCase()) {
       case "sms":
         await dispatchSmsQueue.add("dispatch-sms", {
           eventId: input.eventId,
