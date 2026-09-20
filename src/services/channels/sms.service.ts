@@ -1,4 +1,4 @@
-import twilio from "twilio";
+﻿import twilio from "twilio";
 import { env } from "../../config/env";
 
 export interface SmsResult {
@@ -13,16 +13,22 @@ export interface SmsError {
   providerCode?: string | number;
 }
 
-const client = twilio(env.twilioAccountSid, env.twilioAuthToken);
+// Lazy-load the client so we don't crash on boot with mock credentials
+let client: twilio.Twilio | null = null;
 
 export async function sendSms(to: string, body: string): Promise<SmsResult> {
-  // Mock support if local testing without real credentials
-  if (env.twilioAccountSid === "mock_sid") {
+  // If we don't have real credentials (must start with "AC"), mock success
+  if (!env.twilioAccountSid || !env.twilioAccountSid.startsWith("AC")) {
     return {
       success: true,
       providerMessageId: `mock_${Date.now()}`,
       providerResponse: { sid: `mock_${Date.now()}`, status: "queued" },
     };
+  }
+
+  // Initialize the client only if we have a valid AC... SID
+  if (!client) {
+    client = twilio(env.twilioAccountSid, env.twilioAuthToken);
   }
 
   try {
