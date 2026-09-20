@@ -1,9 +1,15 @@
-﻿import { query } from "../client";
+import { query } from "../client";
 
-export async function insertDeliveryLog(
-  notificationId: string,
-  channel: string
-) {
+export interface CreateDeliveryInput {
+  eventId: string;
+  userId: string;
+  channel: string;
+  status: string;
+  providerMessageId?: string | null;
+  providerResponse?: unknown;
+}
+
+export async function createDelivery(input: CreateDeliveryInput) {
   const rows = await query(
     `
     INSERT INTO notification_deliveries
@@ -16,9 +22,9 @@ export async function insertDeliveryLog(
     RETURNING *
     `,
     [
-      notificationId,
-      channel,
-      "PENDING"
+      input.eventId,
+      input.channel,
+      input.status
     ]
   );
   return rows[0];
