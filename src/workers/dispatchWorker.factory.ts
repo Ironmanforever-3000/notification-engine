@@ -1,9 +1,12 @@
-﻿import { Worker, Job } from "bullmq";
+import { Worker, Job } from "bullmq";
 import { env } from "../config/env";
 import { query } from "../db/client";
 import { getUserById } from "../db/queries/user.queries";
 import { createDelivery } from "../db/queries/delivery.queries";
+import { createSuppression } from "../db/queries/suppression.queries";
 import { acquireIdempotencyLock } from "../utils/idempotency";
+import { canSend } from "../services/preferenceEngine.service";
+import { render } from "../services/templateEngine.service";
 import { logger } from "../utils/logger";
 
 export interface DispatchJob {
@@ -33,7 +36,11 @@ export interface DispatchWorkerConfig {
     subject?: string
   ) => Promise<DispatchSendResult>;
 
-  getDestination: (user: { email: string; phone: string | null; fcm_token: string | null }) => string | null;
+  getDestination: (user: {
+    email: string;
+    phone: string | null;
+    fcm_token: string | null;
+  }) => string | null;
 }
 
 interface EventRow {
@@ -51,7 +58,7 @@ export function createDispatchWorker(config: DispatchWorkerConfig) {
 
       logger.info("Dispatch worker started", { jobId: job.id, eventId, userId, channel });
 
-      // 1. Fetch event
+      // ── 1. Load event ──────────────────────────────────────────────────────
       const eventRows = await query<EventRow>(
         `SELECT id, event_type, user_id, payload FROM notification_events WHERE id = $1`,
         [eventId]
@@ -59,11 +66,27 @@ export function createDispatchWorker(config: DispatchWorkerConfig) {
       const event = eventRows[0];
       if (!event) throw new Error(`Event ${eventId} not found`);
 
-      // 2. Fetch user
+      // ── 2. Load user ───────────────────────────────────────────────────────
       const user = await getUserById(userId);
       if (!user) throw new Error(`User ${userId} not found`);
 
-      // 3. Get destination
+      // ── 3. Policy gate: canSend() ──────────────────────────────────────────
+      const policy = await canSend(userId, event.event_type, channel);
+      if (!policy.allowed) {
+        await createSuppression({
+          eventId,
+          userId,
+          eventType: event.event_type,
+          channel,
+          reason: policy.reason ?? "blocked",
+        });
+        logger.info("Notification suppressed", {
+          eventId, userId, channel, reason: policy.reason,
+        });
+        return;
+      }
+
+      // ── 4. Get destination ─────────────────────────────────────────────────
       const destination = config.getDestination(user);
       if (!destination) {
         await createDelivery({
@@ -76,7 +99,7 @@ export function createDispatchWorker(config: DispatchWorkerConfig) {
         return;
       }
 
-      // 4. Idempotency
+      // ── 5. Idempotency lock ────────────────────────────────────────────────
       const lockAcquired = await acquireIdempotencyLock(eventId, channel, userId);
       if (!lockAcquired) {
         logger.info("Duplicate notification skipped", { eventId, userId, channel });
@@ -84,15 +107,26 @@ export function createDispatchWorker(config: DispatchWorkerConfig) {
         return;
       }
 
-      // 5. Temporary message
-      const message = `Notification: ${event.event_type}`;
-      const subject = `Financial Alert: ${event.event_type}`;
+      // ── 6. Render personalised template ───────────────────────────────────
+      const locale = user.locale?.split("-")[0] ?? "en";
+      const rendered = await render(
+        event.event_type,
+        channel,
+        locale,
+        {
+          ...event.payload,
+          user: { name: user.name },
+        }
+      );
 
-      // 6. Provider send
+      // ── 7. Send via provider ───────────────────────────────────────────────
       try {
-        const result = await config.send(destination, message, subject);
-        
-        // 7. Delivery tracking
+        const result = await config.send(
+          destination,
+          rendered.body,
+          rendered.subject
+        );
+
         await createDelivery({
           eventId,
           userId,
@@ -102,7 +136,10 @@ export function createDispatchWorker(config: DispatchWorkerConfig) {
           providerResponse: result.providerResponse,
         });
 
-        logger.info("Notification sent", { eventId, userId, channel, providerMessageId: result.providerMessageId });
+        logger.info("Notification sent", {
+          eventId, userId, channel,
+          providerMessageId: result.providerMessageId,
+        });
         return result;
       } catch (error: any) {
         await createDelivery({
@@ -120,7 +157,7 @@ export function createDispatchWorker(config: DispatchWorkerConfig) {
       }
     },
     {
-      connection: { host: env.redisHost, port: env.redisPort }
+      connection: { host: env.redisHost, port: env.redisPort },
     }
   );
 }
