@@ -1,9 +1,10 @@
-﻿import { createDispatchWorker } from "./dispatchWorker.factory";
+import { createDispatchWorker } from "./dispatchWorker.factory";
 import { sendEmail } from "../services/channels/email.service";
 
 const worker = createDispatchWorker({
   queueName: "dispatch-email",
   channel: "email",
+  rateLimitPerSecond: 20, // SMTP rate limit protection
   getDestination: (user) => {
     return user.email;
   },

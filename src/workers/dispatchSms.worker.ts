@@ -1,9 +1,10 @@
-﻿import { createDispatchWorker } from "./dispatchWorker.factory";
+import { createDispatchWorker } from "./dispatchWorker.factory";
 import { sendSms } from "../services/channels/sms.service";
 
 const worker = createDispatchWorker({
   queueName: "dispatch-sms",
   channel: "sms",
+  rateLimitPerSecond: 10, // Twilio rate limit protection
   getDestination: (user) => {
     return user.phone;
   },

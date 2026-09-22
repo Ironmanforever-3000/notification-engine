@@ -1,9 +1,10 @@
-﻿import { createDispatchWorker } from "./dispatchWorker.factory";
+import { createDispatchWorker } from "./dispatchWorker.factory";
 import { sendWhatsapp } from "../services/channels/whatsapp.service";
 
 const worker = createDispatchWorker({
   queueName: "dispatch-whatsapp",
   channel: "whatsapp",
+  rateLimitPerSecond: 10, // Twilio WhatsApp rate limit protection
   getDestination: (user) => {
     return user.phone;
   },

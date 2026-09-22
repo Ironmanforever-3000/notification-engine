@@ -1,5 +1,9 @@
-﻿import { Twilio } from "twilio";
+import { Twilio } from "twilio";
 import { env } from "../../config/env";
+import {
+  RetryableProviderError,
+  NonRetryableProviderError,
+} from "../../types/delivery.types";
 
 export interface WhatsappResult {
   success: boolean;
@@ -7,11 +11,12 @@ export interface WhatsappResult {
   providerResponse?: unknown;
 }
 
-export interface WhatsappError {
-  retryable: boolean;
-  reason: string;
-  providerCode?: string | number;
-}
+// Non-retryable Twilio WhatsApp error codes
+const NON_RETRYABLE_CODES = new Set([
+  21211, // Invalid 'To' phone number
+  21614, // Not a valid mobile number
+  63016, // Template not approved
+]);
 
 let client: Twilio | null = null;
 if (env.twilioAccountSid && env.twilioAccountSid.startsWith("AC")) {
@@ -44,10 +49,18 @@ export async function sendWhatsapp(
       providerResponse: { sid: message.sid, status: message.status },
     };
   } catch (error: any) {
-    throw {
-      retryable: true,
-      reason: error?.message ?? "WhatsApp provider error",
-      providerCode: error?.code,
-    } satisfies WhatsappError;
+    const providerCode = error?.code;
+
+    if (NON_RETRYABLE_CODES.has(providerCode)) {
+      throw new NonRetryableProviderError(
+        error.message ?? "WhatsApp permanent failure",
+        providerCode
+      );
+    }
+
+    throw new RetryableProviderError(
+      error.message ?? "WhatsApp temporary failure",
+      providerCode
+    );
   }
 }

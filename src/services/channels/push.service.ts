@@ -1,4 +1,8 @@
-﻿import { firebaseMessaging } from "../../config/firebase";
+import { firebaseMessaging } from "../../config/firebase";
+import {
+  RetryableProviderError,
+  NonRetryableProviderError,
+} from "../../types/delivery.types";
 
 export interface PushResult {
   success: boolean;
@@ -6,11 +10,12 @@ export interface PushResult {
   providerResponse?: unknown;
 }
 
-export interface PushError {
-  retryable: boolean;
-  reason: string;
-  providerCode?: string;
-}
+// FCM error codes that indicate the token is permanently invalid
+const NON_RETRYABLE_FCM_CODES = new Set([
+  "messaging/registration-token-not-registered",
+  "messaging/invalid-registration-token",
+  "messaging/invalid-argument",
+]);
 
 export async function sendPush(
   token: string,
@@ -40,15 +45,17 @@ export async function sendPush(
     };
   } catch (error: any) {
     const code = error?.code ?? "unknown";
-    const nonRetryableCodes = new Set([
-      "messaging/registration-token-not-registered",
-      "messaging/invalid-registration-token",
-    ]);
 
-    throw {
-      retryable: !nonRetryableCodes.has(code),
-      reason: error?.message ?? "FCM provider error",
-      providerCode: code,
-    } satisfies PushError;
+    if (NON_RETRYABLE_FCM_CODES.has(code)) {
+      throw new NonRetryableProviderError(
+        error.message ?? "FCM permanent failure",
+        code
+      );
+    }
+
+    throw new RetryableProviderError(
+      error.message ?? "FCM temporary failure",
+      code
+    );
   }
 }

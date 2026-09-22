@@ -1,9 +1,10 @@
-﻿import { createDispatchWorker } from "./dispatchWorker.factory";
+import { createDispatchWorker } from "./dispatchWorker.factory";
 import { sendPush } from "../services/channels/push.service";
 
 const worker = createDispatchWorker({
   queueName: "dispatch-push",
   channel: "push",
+  rateLimitPerSecond: 50, // FCM rate limit protection
   getDestination: (user) => {
     return user.fcm_token;
   },

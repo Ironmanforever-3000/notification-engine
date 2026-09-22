@@ -1,4 +1,5 @@
-﻿import { query } from "../../db/client";
+import { query } from "../../db/client";
+import { RetryableProviderError } from "../../types/delivery.types";
 
 export interface CreateInAppNotification {
   userId: string;
@@ -8,9 +9,17 @@ export interface CreateInAppNotification {
 }
 
 export async function createInAppNotification(input: CreateInAppNotification) {
-  const rows = await query(
-    `INSERT INTO in_app_notifications (user_id, event_id, title, body) VALUES ($1, $2, $3, $4) RETURNING *`,
-    [input.userId, input.eventId, input.title, input.body]
-  );
-  return rows[0];
+  try {
+    const rows = await query(
+      `INSERT INTO in_app_notifications (user_id, event_id, title, body) VALUES ($1, $2, $3, $4) RETURNING *`,
+      [input.userId, input.eventId, input.title, input.body]
+    );
+    return rows[0];
+  } catch (error: any) {
+    // Database errors are transient (connection issues, deadlocks) — retryable
+    throw new RetryableProviderError(
+      error.message ?? "In-app DB write failed",
+      error?.code
+    );
+  }
 }

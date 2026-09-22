@@ -1,13 +1,16 @@
-import { Worker, Job } from "bullmq";
+import { Worker, Job, UnrecoverableError } from "bullmq";
 import { env } from "../config/env";
 import { query } from "../db/client";
 import { createInAppNotification } from "../services/channels/inApp.service";
 import { acquireIdempotencyLock } from "../utils/idempotency";
 import { createDelivery } from "../db/queries/delivery.queries";
 import { createSuppression } from "../db/queries/suppression.queries";
+import { incrementAnalytics } from "../db/queries/analytics.queries";
 import { canSend } from "../services/preferenceEngine.service";
 import { render } from "../services/templateEngine.service";
+import { incrementLiveCounter } from "../services/liveAnalytics.service";
 import { getUserById } from "../db/queries/user.queries";
+import { NonRetryableProviderError } from "../types/delivery.types";
 import { logger } from "../utils/logger";
 
 interface DispatchInAppJob {
@@ -46,6 +49,7 @@ const worker = new Worker<DispatchInAppJob>(
         eventId, userId, eventType: event.event_type,
         channel, reason: policy.reason ?? "blocked",
       });
+      await incrementAnalytics(event.event_type, channel, "suppressed");
       logger.info("In-app notification suppressed", { eventId, userId, reason: policy.reason });
       return;
     }
@@ -73,16 +77,31 @@ const worker = new Worker<DispatchInAppJob>(
         eventId, userId, channel, status: "sent",
         providerResponse: { provider: "internal" },
       });
+      // Analytics: sent
+      await incrementAnalytics(event.event_type, channel, "sent");
+      await incrementLiveCounter(channel);
       logger.info("In-app notification created", { eventId, userId });
     } catch (error: any) {
       await createDelivery({
         eventId, userId, channel, status: "failed",
         providerResponse: { reason: error?.message ?? "In-app notification failed" },
       });
+
+      logger.error("In-app notification failed", { eventId, userId, error: error?.message });
+
+      // Non-retryable → skip remaining retries
+      if (error instanceof NonRetryableProviderError) {
+        throw new UnrecoverableError(error.message);
+      }
+
+      // Retryable → re-throw for BullMQ retry
       throw error;
     }
   },
-  { connection: { host: env.redisHost, port: env.redisPort } }
+  {
+    connection: { host: env.redisHost, port: env.redisPort },
+    limiter: { max: 100, duration: 1000 }, // 100/sec for in-app
+  }
 );
 
 worker.on("completed", (job) => console.log(`In-app job ${job.id} completed`));

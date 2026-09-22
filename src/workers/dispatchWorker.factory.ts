@@ -1,12 +1,15 @@
-import { Worker, Job } from "bullmq";
+import { Worker, Job, UnrecoverableError } from "bullmq";
 import { env } from "../config/env";
 import { query } from "../db/client";
 import { getUserById } from "../db/queries/user.queries";
 import { createDelivery } from "../db/queries/delivery.queries";
 import { createSuppression } from "../db/queries/suppression.queries";
+import { incrementAnalytics } from "../db/queries/analytics.queries";
 import { acquireIdempotencyLock } from "../utils/idempotency";
 import { canSend } from "../services/preferenceEngine.service";
 import { render } from "../services/templateEngine.service";
+import { incrementLiveCounter } from "../services/liveAnalytics.service";
+import { NonRetryableProviderError } from "../types/delivery.types";
 import { logger } from "../utils/logger";
 
 export interface DispatchJob {
@@ -20,15 +23,12 @@ export interface DispatchSendResult {
   providerResponse?: unknown;
 }
 
-export interface DispatchError {
-  retryable: boolean;
-  reason: string;
-  providerCode?: string | number;
-}
-
 export interface DispatchWorkerConfig {
   queueName: string;
   channel: string;
+
+  /** Provider-specific rate limit (jobs per second). */
+  rateLimitPerSecond?: number;
 
   send: (
     destination: string,
@@ -80,6 +80,8 @@ export function createDispatchWorker(config: DispatchWorkerConfig) {
           channel,
           reason: policy.reason ?? "blocked",
         });
+        // Analytics: suppressed
+        await incrementAnalytics(event.event_type, channel, "suppressed");
         logger.info("Notification suppressed", {
           eventId, userId, channel, reason: policy.reason,
         });
@@ -96,6 +98,7 @@ export function createDispatchWorker(config: DispatchWorkerConfig) {
           status: "failed",
           providerResponse: { reason: "DESTINATION_NOT_AVAILABLE" },
         });
+        await incrementAnalytics(event.event_type, channel, "failed");
         return;
       }
 
@@ -136,12 +139,17 @@ export function createDispatchWorker(config: DispatchWorkerConfig) {
           providerResponse: result.providerResponse,
         });
 
+        // Analytics: sent (final outcome)
+        await incrementAnalytics(event.event_type, channel, "sent");
+        await incrementLiveCounter(channel);
+
         logger.info("Notification sent", {
           eventId, userId, channel,
           providerMessageId: result.providerMessageId,
         });
         return result;
       } catch (error: any) {
+        // Log the delivery failure attempt
         await createDelivery({
           eventId,
           userId,
@@ -149,15 +157,29 @@ export function createDispatchWorker(config: DispatchWorkerConfig) {
           status: "failed",
           providerResponse: {
             retryable: error?.retryable ?? false,
-            reason: error?.reason ?? "Provider error",
+            reason: error?.message ?? "Provider error",
             providerCode: error?.providerCode,
           },
         });
+
+        logger.error("Notification provider failed", {
+          eventId, userId, channel, error: error?.message,
+        });
+
+        // Non-retryable → skip remaining retries via UnrecoverableError
+        if (error instanceof NonRetryableProviderError) {
+          throw new UnrecoverableError(error.message);
+        }
+
+        // Retryable → re-throw so BullMQ applies exponential backoff
         throw error;
       }
     },
     {
       connection: { host: env.redisHost, port: env.redisPort },
+      ...(config.rateLimitPerSecond
+        ? { limiter: { max: config.rateLimitPerSecond, duration: 1000 } }
+        : {}),
     }
   );
 }

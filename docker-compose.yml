@@ -1,4 +1,4 @@
-﻿services:
+services:
   postgres:
     image: postgres:16
     container_name: notification-postgres
@@ -21,6 +21,18 @@
       - redisdata:/data
     restart: unless-stopped
 
+  grafana:
+    image: grafana/grafana:latest
+    container_name: notification-grafana
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
 volumes:
   pgdata:
   redisdata:
+  grafana_data:

@@ -2,7 +2,11 @@
   {
     "event_type": "MARGIN_CALL",
     "tier": "CRITICAL",
-    "default_channels": ["SMS", "PUSH", "IN_APP"],
+    "default_channels": [
+      "SMS",
+      "PUSH",
+      "IN_APP"
+    ],
     "description": "Margin requirement has fallen below required level",
     "bypass_dnd": true,
     "bypass_quiet_hours": true,
@@ -12,7 +16,11 @@
   {
     "event_type": "ACCOUNT_FRAUD_ALERT",
     "tier": "CRITICAL",
-    "default_channels": ["SMS", "PUSH", "IN_APP"],
+    "default_channels": [
+      "SMS",
+      "PUSH",
+      "IN_APP"
+    ],
     "description": "Suspicious activity detected on account",
     "bypass_dnd": true,
     "bypass_quiet_hours": true,
@@ -22,7 +30,11 @@
   {
     "event_type": "KYC_EXPIRY_URGENT",
     "tier": "CRITICAL",
-    "default_channels": ["SMS", "PUSH", "IN_APP"],
+    "default_channels": [
+      "SMS",
+      "PUSH",
+      "IN_APP"
+    ],
     "description": "KYC documentation is about to expire",
     "bypass_dnd": true,
     "bypass_quiet_hours": true,
@@ -32,7 +44,11 @@
   {
     "event_type": "LARGE_WITHDRAWAL_ALERT",
     "tier": "CRITICAL",
-    "default_channels": ["SMS", "PUSH", "IN_APP"],
+    "default_channels": [
+      "SMS",
+      "PUSH",
+      "IN_APP"
+    ],
     "description": "Large withdrawal detected from account",
     "bypass_dnd": true,
     "bypass_quiet_hours": true,
@@ -42,7 +58,11 @@
   {
     "event_type": "LOGIN_FROM_NEW_DEVICE",
     "tier": "CRITICAL",
-    "default_channels": ["SMS", "PUSH", "IN_APP"],
+    "default_channels": [
+      "SMS",
+      "PUSH",
+      "IN_APP"
+    ],
     "description": "Account accessed from a new device",
     "bypass_dnd": true,
     "bypass_quiet_hours": true,
@@ -52,7 +72,11 @@
   {
     "event_type": "TRANSACTION_ALERT",
     "tier": "HIGH",
-    "default_channels": ["PUSH", "IN_APP", "EMAIL"],
+    "default_channels": [
+      "PUSH",
+      "IN_APP",
+      "EMAIL"
+    ],
     "description": "Transaction debit or credit notification",
     "bypass_dnd": false,
     "bypass_quiet_hours": false,
@@ -62,7 +86,10 @@
   {
     "event_type": "PRICE_ALERT_TRIGGERED",
     "tier": "HIGH",
-    "default_channels": ["PUSH", "IN_APP"],
+    "default_channels": [
+      "PUSH",
+      "IN_APP"
+    ],
     "description": "User-configured price alert has been triggered",
     "bypass_dnd": false,
     "bypass_quiet_hours": false,
@@ -72,7 +99,10 @@
   {
     "event_type": "ORDER_EXECUTED",
     "tier": "HIGH",
-    "default_channels": ["PUSH", "IN_APP"],
+    "default_channels": [
+      "PUSH",
+      "IN_APP"
+    ],
     "description": "Order successfully executed",
     "bypass_dnd": false,
     "bypass_quiet_hours": false,
@@ -82,7 +112,11 @@
   {
     "event_type": "ORDER_FAILED",
     "tier": "HIGH",
-    "default_channels": ["PUSH", "IN_APP", "SMS"],
+    "default_channels": [
+      "PUSH",
+      "IN_APP",
+      "SMS"
+    ],
     "description": "Order could not be executed",
     "bypass_dnd": false,
     "bypass_quiet_hours": false,
@@ -92,7 +126,11 @@
   {
     "event_type": "PAYMENT_DUE_TOMORROW",
     "tier": "HIGH",
-    "default_channels": ["PUSH", "IN_APP", "EMAIL"],
+    "default_channels": [
+      "PUSH",
+      "IN_APP",
+      "EMAIL"
+    ],
     "description": "Payment due date reminder",
     "bypass_dnd": false,
     "bypass_quiet_hours": false,
@@ -102,7 +140,10 @@
   {
     "event_type": "LOW_BALANCE_WARNING",
     "tier": "HIGH",
-    "default_channels": ["PUSH", "IN_APP"],
+    "default_channels": [
+      "PUSH",
+      "IN_APP"
+    ],
     "description": "Account balance below threshold",
     "bypass_dnd": false,
     "bypass_quiet_hours": false,
@@ -112,7 +153,10 @@
   {
     "event_type": "SIP_EXECUTED",
     "tier": "NORMAL",
-    "default_channels": ["PUSH", "EMAIL"],
+    "default_channels": [
+      "PUSH",
+      "EMAIL"
+    ],
     "description": "Monthly SIP successfully processed",
     "bypass_dnd": false,
     "bypass_quiet_hours": false,
@@ -122,7 +166,10 @@
   {
     "event_type": "SIP_REMINDER",
     "tier": "NORMAL",
-    "default_channels": ["PUSH", "EMAIL"],
+    "default_channels": [
+      "PUSH",
+      "EMAIL"
+    ],
     "description": "Reminder for upcoming SIP",
     "bypass_dnd": false,
     "bypass_quiet_hours": false,
@@ -132,7 +179,10 @@
   {
     "event_type": "PORTFOLIO_WEEKLY_SUMMARY",
     "tier": "NORMAL",
-    "default_channels": ["EMAIL", "IN_APP"],
+    "default_channels": [
+      "EMAIL",
+      "IN_APP"
+    ],
     "description": "Weekly portfolio performance summary",
     "bypass_dnd": false,
     "bypass_quiet_hours": false,
@@ -142,7 +192,10 @@
   {
     "event_type": "DIVIDEND_CREDITED",
     "tier": "NORMAL",
-    "default_channels": ["PUSH", "IN_APP"],
+    "default_channels": [
+      "PUSH",
+      "IN_APP"
+    ],
     "description": "Dividend has been credited to account",
     "bypass_dnd": false,
     "bypass_quiet_hours": false,
@@ -152,7 +205,10 @@
   {
     "event_type": "NEW_IPO_AVAILABLE",
     "tier": "NORMAL",
-    "default_channels": ["PUSH", "EMAIL"],
+    "default_channels": [
+      "PUSH",
+      "EMAIL"
+    ],
     "description": "New IPO is available for subscription",
     "bypass_dnd": false,
     "bypass_quiet_hours": false,
@@ -162,7 +218,10 @@
   {
     "event_type": "RECOMMENDED_FUND_UPDATE",
     "tier": "NORMAL",
-    "default_channels": ["PUSH", "EMAIL"],
+    "default_channels": [
+      "PUSH",
+      "EMAIL"
+    ],
     "description": "Fund matching investment preferences has been updated",
     "bypass_dnd": false,
     "bypass_quiet_hours": false,
@@ -172,7 +231,10 @@
   {
     "event_type": "GOAL_PROGRESS_UPDATE",
     "tier": "NORMAL",
-    "default_channels": ["PUSH", "IN_APP"],
+    "default_channels": [
+      "PUSH",
+      "IN_APP"
+    ],
     "description": "Investment goal progress update",
     "bypass_dnd": false,
     "bypass_quiet_hours": false,
@@ -182,7 +244,11 @@
   {
     "event_type": "TAX_STATEMENT_READY",
     "tier": "NORMAL",
-    "default_channels": ["EMAIL", "IN_APP", "PUSH"],
+    "default_channels": [
+      "EMAIL",
+      "IN_APP",
+      "PUSH"
+    ],
     "description": "Annual tax statement is ready for download",
     "bypass_dnd": false,
     "bypass_quiet_hours": false,
@@ -192,7 +258,10 @@
   {
     "event_type": "INTEREST_CREDITED",
     "tier": "NORMAL",
-    "default_channels": ["PUSH", "IN_APP"],
+    "default_channels": [
+      "PUSH",
+      "IN_APP"
+    ],
     "description": "Interest has been credited to account",
     "bypass_dnd": false,
     "bypass_quiet_hours": false,
@@ -202,7 +271,10 @@
   {
     "event_type": "PROMOTIONAL_OFFER",
     "tier": "LOW",
-    "default_channels": ["EMAIL", "PUSH"],
+    "default_channels": [
+      "EMAIL",
+      "PUSH"
+    ],
     "description": "Promotional financial offer",
     "bypass_dnd": false,
     "bypass_quiet_hours": false,
@@ -212,7 +284,10 @@
   {
     "event_type": "REFERRAL_BONUS",
     "tier": "LOW",
-    "default_channels": ["EMAIL", "PUSH"],
+    "default_channels": [
+      "EMAIL",
+      "PUSH"
+    ],
     "description": "Referral program bonus notification",
     "bypass_dnd": false,
     "bypass_quiet_hours": false,
@@ -222,7 +297,10 @@
   {
     "event_type": "APP_FEATURE_ANNOUNCEMENT",
     "tier": "LOW",
-    "default_channels": ["EMAIL", "PUSH"],
+    "default_channels": [
+      "EMAIL",
+      "PUSH"
+    ],
     "description": "New app feature announcement",
     "bypass_dnd": false,
     "bypass_quiet_hours": false,
@@ -232,7 +310,10 @@
   {
     "event_type": "SURVEY_REQUEST",
     "tier": "LOW",
-    "default_channels": ["EMAIL", "PUSH"],
+    "default_channels": [
+      "EMAIL",
+      "PUSH"
+    ],
     "description": "User experience survey request",
     "bypass_dnd": false,
     "bypass_quiet_hours": false,
@@ -242,7 +323,11 @@
   {
     "event_type": "NOMINEE_UPDATE_REQUIRED",
     "tier": "REGULATORY",
-    "default_channels": ["EMAIL", "PUSH", "IN_APP"],
+    "default_channels": [
+      "EMAIL",
+      "PUSH",
+      "IN_APP"
+    ],
     "description": "Nominee details update required",
     "bypass_dnd": false,
     "bypass_quiet_hours": false,
@@ -252,7 +337,11 @@
   {
     "event_type": "REGULATORY_NOTICE",
     "tier": "REGULATORY",
-    "default_channels": ["EMAIL", "PUSH", "IN_APP"],
+    "default_channels": [
+      "EMAIL",
+      "PUSH",
+      "IN_APP"
+    ],
     "description": "Regulatory or compliance notification",
     "bypass_dnd": false,
     "bypass_quiet_hours": false,
@@ -262,7 +351,12 @@
   {
     "event_type": "KYC_DOCUMENT_REQUIRED",
     "tier": "REGULATORY",
-    "default_channels": ["EMAIL", "PUSH", "IN_APP", "SMS"],
+    "default_channels": [
+      "EMAIL",
+      "PUSH",
+      "IN_APP",
+      "SMS"
+    ],
     "description": "KYC documents submission required",
     "bypass_dnd": false,
     "bypass_quiet_hours": false,
@@ -272,11 +366,30 @@
   {
     "event_type": "ANNUAL_STATEMENT_AVAILABLE",
     "tier": "REGULATORY",
-    "default_channels": ["EMAIL", "IN_APP"],
+    "default_channels": [
+      "EMAIL",
+      "IN_APP"
+    ],
     "description": "Annual account statement is available",
     "bypass_dnd": false,
     "bypass_quiet_hours": false,
     "bypass_frequency_cap": false,
     "requires_optin": false
+  },
+  {
+    "requires_optin": false,
+    "bypass_dnd": true,
+    "event_type": "ACCOUNT_FRAUD_ALERT",
+    "bypass_frequency_cap": true,
+    "tier": "CRITICAL",
+    "bypass_quiet_hours": true,
+    "description": "Account fraud alert",
+    "default_channels": [
+      "sms",
+      "email",
+      "push",
+      "whatsapp",
+      "in_app"
+    ]
   }
 ]

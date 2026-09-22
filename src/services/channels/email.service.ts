@@ -1,5 +1,9 @@
-﻿import nodemailer from "nodemailer";
+import nodemailer from "nodemailer";
 import { env } from "../../config/env";
+import {
+  RetryableProviderError,
+  NonRetryableProviderError,
+} from "../../types/delivery.types";
 
 export interface EmailResult {
   success: boolean;
@@ -7,10 +11,18 @@ export interface EmailResult {
   providerResponse?: unknown;
 }
 
-export interface EmailError {
-  retryable: boolean;
-  reason: string;
-  providerCode?: string | number;
+/**
+ * Determines if an SMTP error is permanent (no point retrying).
+ * - Auth failures (535, EAUTH)
+ * - Invalid recipient (550, 553)
+ * - Message rejected (552 size, 554 policy)
+ */
+function isPermanentEmailError(error: any): boolean {
+  const code = error?.responseCode ?? error?.code;
+  const permanentCodes = new Set([535, 550, 552, 553, 554]);
+  if (typeof code === "number" && permanentCodes.has(code)) return true;
+  if (code === "EAUTH" || code === "EENVELOPE") return true;
+  return false;
 }
 
 // Lazy-load so it doesn't crash on boot if credentials are mock/missing
@@ -62,11 +74,16 @@ export async function sendEmail(
       },
     };
   } catch (error: any) {
-    const normalizedError: EmailError = {
-      retryable: true,
-      reason: error?.message ?? "Email provider error",
-      providerCode: error?.code,
-    };
-    throw normalizedError;
+    if (isPermanentEmailError(error)) {
+      throw new NonRetryableProviderError(
+        error.message ?? "Permanent email failure",
+        error?.responseCode ?? error?.code
+      );
+    }
+
+    throw new RetryableProviderError(
+      error.message ?? "Temporary email failure",
+      error?.responseCode ?? error?.code
+    );
   }
 }

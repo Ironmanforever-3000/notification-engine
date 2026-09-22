@@ -1,5 +1,6 @@
-﻿import { Queue } from "bullmq";
+import { Queue } from "bullmq";
 import { env } from "../config/env";
+import { RETRY_CONFIG } from "../config/retry";
 
 export interface DispatchEmailJob {
   eventId: string;
@@ -13,6 +14,12 @@ export const dispatchEmailQueue = new Queue<DispatchEmailJob>(
     connection: {
       host: env.redisHost,
       port: env.redisPort,
+    },
+    defaultJobOptions: {
+      attempts: RETRY_CONFIG.attempts,
+      backoff: RETRY_CONFIG.backoff,
+      removeOnComplete: RETRY_CONFIG.removeOnComplete,
+      removeOnFail: RETRY_CONFIG.removeOnFail,
     },
   }
 );
